@@ -3,9 +3,9 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Tetris</title>
+    <title>Tetris Neón V8 </title>
     <style>
-        /* --- ESTILOS VISUALES (TU DISEÑO NEÓN) --- */
+        /* --- ESTILOS VISUALES (Mismo Neón) --- */
         :root { --glow-color: #fff; }
         body {
             background-color: #0a0a0a;
@@ -46,18 +46,15 @@
         .btn-p1 { border-color: #0DC2FF; color: #0DC2FF; box-shadow: 0 0 10px #0DC2FF; }
         .btn-p2 { border-color: #FF0D72; color: #FF0D72; box-shadow: 0 0 10px #FF0D72; }
 
-        /* --- UI CONTROLS (BOTONES GRANDES AQUI) --- */
+        /* --- UI CONTROLS --- */
         #ui-controls {
             position: absolute; top: 20px; right: 20px;
-            display: flex; gap: 15px; z-index: 200; /* Más separación */
+            display: flex; gap: 15px; z-index: 200;
         }
         .mini-btn {
             background: rgba(0, 0, 0, 0.8); 
-            border: 2px solid rgba(255, 255, 255, 0.6); /* Borde más grueso */
-            color: #fff; 
-            padding: 12px 20px; /* MÁS RELLENO (Grande) */
-            font-size: 16px; /* LETRA MÁS GRANDE */
-            font-weight: bold;
+            border: 2px solid rgba(255, 255, 255, 0.6); 
+            color: #fff; padding: 12px 20px; font-size: 16px; font-weight: bold;
             cursor: pointer; border-radius: 25px; transition: 0.2s; backdrop-filter: blur(4px);
             box-shadow: 0 0 10px rgba(0,0,0,0.5);
         }
@@ -99,19 +96,16 @@
 
         /* Ajustes Mobile */
         @media (max-width: 800px) {
-            #main-container { gap: 10px; transform: scale(0.9); margin-top: 40px; /* Espacio extra para botones arriba */ }
+            #main-container { gap: 10px; transform: scale(0.9); margin-top: 40px; }
             #mobile-controls { display: flex; }
             .controls-info { display: none; }
-            h1 { font-size: 30px; margin-top: 10px; display: none; /* Ocultar título al jugar para espacio */ }
-            
-            /* Ajustar botones UI en celular para que no tapen */
+            h1 { font-size: 30px; margin-top: 10px; display: none; }
             #ui-controls { top: 10px; right: 10px; gap: 8px; width: 100%; justify-content: center; right: 0; }
             .mini-btn { padding: 10px 18px; font-size: 14px; }
         }
 
         #winner-text { font-size: 30px; margin-bottom: 30px; color: #0DC2FF; }
         
-        /* Overlay de Pausa */
         #pause-overlay {
             position: absolute; top: 0; left: 0; width: 100%; height: 100%;
             background: rgba(0,0,0,0.6); display: flex;
@@ -133,7 +127,7 @@
     </div>
 
     <div id="menu-screen" class="overlay">
-        <h1>TETRIS</h1>
+        <h1>PETRIS</h1>
         <button class="btn btn-p1" onclick="initGame(1)">1 JUGADOR</button>
         <button class="btn btn-p2" onclick="initGame(2)">2 JUGADORES (PC)</button>
         <p style="color: #888; margin-top: 20px; font-size: 12px;">Toca para activar sonido</p>
@@ -154,6 +148,7 @@
                 <canvas id="tetrisP1" width="200" height="400"></canvas>
             </div>
             <div class="stats">Pts: <span id="scoreP1">0</span></div>
+            <div class="stats" style="font-size: 14px; color: #aaa;">Nivel: <span id="levelP1">1</span></div>
             <div class="controls-info">WASD</div>
         </div>
 
@@ -170,7 +165,7 @@
     <div id="mobile-controls">
         <div class="d-pad">
             <div class="touch-btn" ontouchstart="handleTouch(event, 'left')">⬅️</div>
-            <div class="touch-btn" ontouchstart="handleTouch(event, 'hardDrop')">⬇️</div>
+            <div class="touch-btn" ontouchstart="startSoftDrop(event)" ontouchend="stopSoftDrop(event)">⬇️</div>
             <div class="touch-btn" ontouchstart="handleTouch(event, 'right')">➡️</div>
         </div>
         <div class="d-pad">
@@ -287,9 +282,11 @@
         const ROW_COUNT=20, COL_COUNT=10, SCALE=20; 
         let gameRunning = false, lastTime = 0, players = [];
 
+        // GENERADOR DE PIEZAS (SISTEMA DE BOLSA - BAG SYSTEM)
         function createMatrix(w, h) {
             const m = []; while (h--) m.push(new Array(w).fill(0)); return m;
         }
+        
         function createPiece(t) {
             if (t==='I') return [[0,1,0,0],[0,1,0,0],[0,1,0,0],[0,1,0,0]];
             if (t==='L') return [[0,2,0],[0,2,0],[0,2,2]];
@@ -306,11 +303,32 @@
                 this.ctx = this.canvas.getContext('2d');
                 this.ctx.scale(SCALE, SCALE); 
                 this.scoreEl = document.getElementById(scoreId);
+                this.levelEl = document.getElementById('level'+name.substr(1)); // Buscar elemento de nivel si existe
+                
                 this.arena = createMatrix(COL_COUNT, ROW_COUNT);
                 this.player = { pos: {x:0,y:0}, matrix:null, score:0 };
-                this.dropCounter=0; this.dropInterval=1000;
+                
+                this.dropCounter=0; 
+                this.baseInterval=1000; // Velocidad base
+                this.dropInterval=1000; // Velocidad actual
+                this.isSoftDropping = false;
+
+                this.bag = []; // Bolsa de piezas
                 this.ctrls=ctrls; this.name=name; this.isAlive=true;
                 this.reset();
+            }
+
+            // FUNCIÓN PARA OBTENER PIEZA DE LA BOLSA (NO REPETIDAS)
+            getPieceFromBag() {
+                if (this.bag.length === 0) {
+                    this.bag = 'ILJOTSZ'.split('');
+                    // Barajar bolsa
+                    for (let i = this.bag.length - 1; i > 0; i--) {
+                        const j = Math.floor(Math.random() * (i + 1));
+                        [this.bag[i], this.bag[j]] = [this.bag[j], this.bag[i]];
+                    }
+                }
+                return createPiece(this.bag.pop());
             }
 
             drawMatrix(m, offset) {
@@ -373,7 +391,8 @@
             }
 
             reset() {
-                const p='ILJOTSZ'; this.player.matrix=createPiece(p[p.length*Math.random()|0]);
+                // USAR BOLSA EN LUGAR DE RANDOM PURO
+                this.player.matrix = this.getPieceFromBag();
                 this.player.pos.y=0; this.player.pos.x=(this.arena[0].length/2|0)-(this.player.matrix[0].length/2|0);
                 if (this.collide(this.arena, this.player)) {
                     this.isAlive=false; handleGameOver(this.name);
@@ -389,6 +408,17 @@
                 }
                 this.scoreEl.innerText=this.player.score;
                 if(lines>0) playSfx('line');
+
+                // SISTEMA DE NIVELES (VELOCIDAD PROGRESIVA)
+                // Cada 500 puntos sube nivel y velocidad
+                const level = Math.floor(this.player.score / 500) + 1;
+                if (this.levelEl) this.levelEl.innerText = level;
+                
+                // Reducir intervalo 50ms por nivel (maximo 100ms de rapidez)
+                this.baseInterval = Math.max(100, 1000 - (level * 50)); 
+                
+                // Si no estamos bajando rápido, aplicar nueva velocidad
+                if(!this.isSoftDropping) this.dropInterval = this.baseInterval;
             }
 
             drop() {
@@ -400,17 +430,10 @@
                 this.dropCounter=0;
             }
 
-            // FUNCIÓN HARD DROP (CAIDA INSTANTÁNEA)
-            hardDrop() {
-                while (!this.collide(this.arena, {pos:{x:this.player.pos.x, y:this.player.pos.y+1}, matrix:this.player.matrix})) {
-                    this.player.pos.y++;
-                }
-                this.drop(); 
-            }
-
             update(dt) {
                 if(!this.isAlive) return;
-                this.dropCounter+=dt; if(this.dropCounter>this.dropInterval) this.drop();
+                this.dropCounter+=dt; 
+                if(this.dropCounter>this.dropInterval) this.drop();
                 this.draw();
             }
 
@@ -465,8 +488,16 @@
             players.forEach(p => {
                 if(e.keyCode===p.ctrls.l) p.move(-1);
                 else if(e.keyCode===p.ctrls.r) p.move(1);
-                else if(e.keyCode===p.ctrls.d) p.drop();
+                else if(e.keyCode===p.ctrls.d) { p.dropInterval = 50; p.isSoftDropping = true; } // Teclado Soft Drop
                 else if(e.keyCode===p.ctrls.rot) p.playerRotate(1);
+            });
+        });
+
+        document.addEventListener('keyup', e => {
+            if(!gameRunning || isPaused) return;
+            players.forEach(p => {
+                // Al soltar abajo, regresar a velocidad normal
+                if(e.keyCode===p.ctrls.d) { p.dropInterval = p.baseInterval; p.isSoftDropping = false; }
             });
         });
 
@@ -478,9 +509,22 @@
             const p1 = players[0];
             if(action==='left') p1.move(-1);
             if(action==='right') p1.move(1);
-            if(action==='down') p1.drop(); 
-            if(action==='hardDrop') p1.hardDrop(); 
             if(action==='rotate') p1.playerRotate(1);
+        }
+
+        // SOFT DROP TÁCTIL (Bajar mientras presionas)
+        function startSoftDrop(e) {
+            if(e.cancelable) e.preventDefault();
+            if(!gameRunning || isPaused || players.length === 0) return;
+            players[0].dropInterval = 50; // Velocidad Turbo (50ms)
+            players[0].isSoftDropping = true;
+        }
+
+        function stopSoftDrop(e) {
+            if(e.cancelable) e.preventDefault();
+            if(!gameRunning || players.length === 0) return;
+            players[0].dropInterval = players[0].baseInterval; // Regresa a velocidad nivel
+            players[0].isSoftDropping = false;
         }
 
     </script>
