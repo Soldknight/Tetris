@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Tetris</title>
     <style>
-        /* --- ESTILOS VISUALES --- */
+        /* --- ESTILOS VISUALES (TU DISEÑO NEÓN) --- */
         :root { --glow-color: #fff; }
         body {
             background-color: #0a0a0a;
@@ -19,7 +19,7 @@
             display: flex; flex-direction: column;
             align-items: center; justify-content: center;
             height: 100vh; margin: 0; overflow: hidden;
-            touch-action: none;
+            touch-action: none; user-select: none;
         }
 
         #bg-canvas { position: fixed; top: 0; left: 0; width: 100%; height: 100%; z-index: -1; }
@@ -40,24 +40,28 @@
             font-size: 20px; padding: 15px 40px; margin: 10px;
             border: 2px solid #fff; border-radius: 50px;
             cursor: pointer; text-transform: uppercase; font-weight: bold;
-            box-shadow: 0 0 15px rgba(255,255,255,0.2);
-            width: 80%; max-width: 300px;
+            box-shadow: 0 0 15px rgba(255,255,255,0.2); width: 80%; max-width: 300px;
         }
         .btn:hover { background: #fff; color: #000; }
         .btn-p1 { border-color: #0DC2FF; color: #0DC2FF; box-shadow: 0 0 10px #0DC2FF; }
         .btn-p2 { border-color: #FF0D72; color: #FF0D72; box-shadow: 0 0 10px #FF0D72; }
 
-        /* --- BOTONES DE SALIR/MÚSICA (UI) --- */
+        /* --- UI CONTROLS (BOTONES GRANDES AQUI) --- */
         #ui-controls {
             position: absolute; top: 20px; right: 20px;
-            display: flex; gap: 10px; z-index: 200;
+            display: flex; gap: 15px; z-index: 200; /* Más separación */
         }
         .mini-btn {
-            background: rgba(255, 255, 255, 0.1); border: 1px solid rgba(255, 255, 255, 0.3);
-            color: rgba(255,255,255,0.8); padding: 8px 15px; font-size: 12px;
-            cursor: pointer; border-radius: 15px; transition: 0.3s;
+            background: rgba(0, 0, 0, 0.8); 
+            border: 2px solid rgba(255, 255, 255, 0.6); /* Borde más grueso */
+            color: #fff; 
+            padding: 12px 20px; /* MÁS RELLENO (Grande) */
+            font-size: 16px; /* LETRA MÁS GRANDE */
+            font-weight: bold;
+            cursor: pointer; border-radius: 25px; transition: 0.2s; backdrop-filter: blur(4px);
+            box-shadow: 0 0 10px rgba(0,0,0,0.5);
         }
-        .mini-btn:hover { background: #fff; color: #000; }
+        .mini-btn:active { background: #fff; color: #000; transform: scale(0.95); }
 
         /* --- JUEGO --- */
         #main-container { display: flex; gap: 40px; align-items: flex-start; transition: transform 0.3s; }
@@ -69,7 +73,6 @@
             background-color: rgba(0, 0, 0, 0.8);
             padding: 5px; border-radius: 8px;
         }
-        /* CANVAS DE 200px (10 bloques x 20px) */
         canvas { display: block; }
         .player-title { font-size: 20px; font-weight: bold; margin-bottom: 10px; text-shadow: 0 0 15px currentColor; }
         #p1-title { color: #0DC2FF; text-shadow: 0 0 20px #0DC2FF; }
@@ -79,32 +82,44 @@
 
         /* --- CONTROLES MÓVILES --- */
         #mobile-controls {
-            display: none; width: 100%; position: absolute; bottom: 30px;
-            justify-content: center; gap: 20px; z-index: 50;
+            display: none; width: 100%; position: absolute; bottom: 20px;
+            justify-content: center; gap: 25px; z-index: 50;
         }
         .touch-btn {
-            width: 70px; height: 70px;
-            background: rgba(255, 255, 255, 0.1);
-            border: 2px solid rgba(255,255,255,0.3); border-radius: 50%;
-            color: white; font-size: 30px;
+            width: 75px; height: 75px;
+            background: rgba(255, 255, 255, 0.15);
+            border: 2px solid rgba(255,255,255,0.4); border-radius: 50%;
+            color: white; font-size: 35px;
             display: flex; align-items: center; justify-content: center;
-            user-select: none; backdrop-filter: blur(4px);
+            user-select: none; backdrop-filter: blur(5px);
+            -webkit-tap-highlight-color: transparent;
         }
-        .touch-btn:active { background: rgba(255,255,255,0.3); transform: scale(0.9); }
+        .touch-btn:active { background: rgba(255,255,255,0.5); transform: scale(0.9); }
         .d-pad { display: flex; gap: 15px; }
 
         /* Ajustes Mobile */
         @media (max-width: 800px) {
-            #main-container { gap: 10px; transform: scale(0.9); }
-            #mobile-controls { display: flex; } /* Mostrar solo en celular */
+            #main-container { gap: 10px; transform: scale(0.9); margin-top: 40px; /* Espacio extra para botones arriba */ }
+            #mobile-controls { display: flex; }
             .controls-info { display: none; }
-            h1 { font-size: 30px; margin-top: 10px; }
-            /* Ocultar botones superiores en móvil para que no estorben, o hacerlos más chicos */
-            #ui-controls { top: 10px; right: 10px; gap: 5px; }
-            .mini-btn { padding: 5px 10px; font-size: 10px; }
+            h1 { font-size: 30px; margin-top: 10px; display: none; /* Ocultar título al jugar para espacio */ }
+            
+            /* Ajustar botones UI en celular para que no tapen */
+            #ui-controls { top: 10px; right: 10px; gap: 8px; width: 100%; justify-content: center; right: 0; }
+            .mini-btn { padding: 10px 18px; font-size: 14px; }
         }
 
         #winner-text { font-size: 30px; margin-bottom: 30px; color: #0DC2FF; }
+        
+        /* Overlay de Pausa */
+        #pause-overlay {
+            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.6); display: flex;
+            align-items: center; justify-content: center;
+            color: #fff; font-size: 50px; font-weight: bold;
+            text-shadow: 0 0 20px #fff; z-index: 90;
+            backdrop-filter: blur(8px); letter-spacing: 5px;
+        }
     </style>
 </head>
 <body>
@@ -112,16 +127,19 @@
     <canvas id="bg-canvas"></canvas>
 
     <div id="ui-controls" class="hidden">
-        <button class="mini-btn" id="muteBtn" onclick="toggleMute()">🔇 Sonido</button>
-        <button class="mini-btn" onclick="location.reload()">❌ Salir</button>
+        <button class="mini-btn" id="pauseBtn" onclick="togglePause()">⏸️ PAUSA</button>
+        <button class="mini-btn" id="muteBtn" onclick="toggleMute()">🔇 SONIDO</button>
+        <button class="mini-btn" style="border-color: #ff4444; color: #ff4444;" onclick="location.reload()">❌ SALIR</button>
     </div>
 
     <div id="menu-screen" class="overlay">
         <h1>TETRIS</h1>
         <button class="btn btn-p1" onclick="initGame(1)">1 JUGADOR</button>
         <button class="btn btn-p2" onclick="initGame(2)">2 JUGADORES (PC)</button>
-        <p style="color: #888; margin-top: 20px; font-size: 12px;">Toca la pantalla para activar sonido</p>
+        <p style="color: #888; margin-top: 20px; font-size: 12px;">Toca para activar sonido</p>
     </div>
+
+    <div id="pause-overlay" class="hidden">PAUSA</div>
 
     <div id="game-over-screen" class="overlay hidden">
         <h1 style="color: #FF0D72;">GAME OVER</h1>
@@ -151,12 +169,12 @@
 
     <div id="mobile-controls">
         <div class="d-pad">
-            <div class="touch-btn" onclick="handleTouch('left')">⬅️</div>
-            <div class="touch-btn" onclick="handleTouch('down')">⬇️</div>
-            <div class="touch-btn" onclick="handleTouch('right')">➡️</div>
+            <div class="touch-btn" ontouchstart="handleTouch(event, 'left')">⬅️</div>
+            <div class="touch-btn" ontouchstart="handleTouch(event, 'hardDrop')">⬇️</div>
+            <div class="touch-btn" ontouchstart="handleTouch(event, 'right')">➡️</div>
         </div>
         <div class="d-pad">
-            <div class="touch-btn" style="border-color: #0DC2FF;" onclick="handleTouch('rotate')">🔄</div>
+            <div class="touch-btn" style="border-color: #0DC2FF;" ontouchstart="handleTouch(event, 'rotate')">🔄</div>
         </div>
     </div>
 
@@ -196,9 +214,9 @@
         }
         animateBg();
 
-        // --- 2. AUDIO SYSTEM ---
+        // --- 2. AUDIO & PAUSA ---
         const music = document.getElementById('bgMusic');
-        const MUSIC_VOL = 0.5; let isMuted = false;
+        const MUSIC_VOL = 0.5; let isMuted = false; let isPaused = false;
 
         function tryPlayMusic() {
             if(music.paused && !isMuted) {
@@ -213,13 +231,36 @@
             isMuted = !isMuted;
             const btn = document.getElementById('muteBtn');
             if(isMuted) { music.pause(); btn.innerText="🔇 OFF"; }
-            else { tryPlayMusic(); btn.innerText="🔊 ON"; }
+            else { if(!isPaused) tryPlayMusic(); btn.innerText="🔊 ON"; }
+        }
+
+        function togglePause() {
+            if (!gameRunning) return;
+            isPaused = !isPaused;
+            const overlay = document.getElementById('pause-overlay');
+            const btn = document.getElementById('pauseBtn');
+            
+            if (isPaused) {
+                overlay.classList.remove('hidden');
+                btn.innerText = "▶️ JUGAR";
+                btn.style.borderColor = "#0DC2FF";
+                music.pause();
+                speed = 0; 
+            } else {
+                overlay.classList.add('hidden');
+                btn.innerText = "⏸️ PAUSA";
+                btn.style.borderColor = "rgba(255,255,255,0.6)";
+                if(!isMuted) music.play();
+                speed = 0.8; 
+                lastTime = performance.now();
+                requestAnimationFrame(updateLoop);
+            }
         }
 
         const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
         function playSfx(type) {
             if (audioCtx.state === 'suspended') audioCtx.resume();
-            if (isMuted) return;
+            if (isMuted || isPaused) return;
             const osc = audioCtx.createOscillator(); const gain = audioCtx.createGain();
             osc.connect(gain); gain.connect(audioCtx.destination);
             const vol = 0.2; 
@@ -236,14 +277,14 @@
             }
         }
 
-        // --- 3. LOGICA TETRIS CORREGIDA (10 COLUMNAS) ---
+        // --- 3. LÓGICA TETRIS ---
         const COLORES = [ null,
             { fill: '#FF0D72', glow: '#FF0D72' }, { fill: '#0DC2FF', glow: '#0DC2FF' },
             { fill: '#0DFF72', glow: '#0DFF72' }, { fill: '#F538FF', glow: '#F538FF' },
             { fill: '#FF8E0D', glow: '#FF8E0D' }, { fill: '#FFE138', glow: '#FFE138' },
             { fill: '#3877FF', glow: '#3877FF' } ];
 
-        const ROW_COUNT=20, COL_COUNT=10, SCALE=20; // 10 Columnas para que no atraviese
+        const ROW_COUNT=20, COL_COUNT=10, SCALE=20; 
         let gameRunning = false, lastTime = 0, players = [];
 
         function createMatrix(w, h) {
@@ -290,10 +331,8 @@
 
             draw() {
                 this.ctx.clearRect(0,0,this.canvas.width,this.canvas.height);
-                // Rejilla
                 this.ctx.strokeStyle = 'rgba(255,255,255,0.05)'; this.ctx.lineWidth = 0.05;
                 for(let i=0; i<COL_COUNT; i++) { this.ctx.beginPath(); this.ctx.moveTo(i,0); this.ctx.lineTo(i,ROW_COUNT); this.ctx.stroke(); }
-                
                 this.drawMatrix(this.arena, {x:0,y:0});
                 this.drawMatrix(this.player.matrix, this.player.pos);
             }
@@ -361,6 +400,14 @@
                 this.dropCounter=0;
             }
 
+            // FUNCIÓN HARD DROP (CAIDA INSTANTÁNEA)
+            hardDrop() {
+                while (!this.collide(this.arena, {pos:{x:this.player.pos.x, y:this.player.pos.y+1}, matrix:this.player.matrix})) {
+                    this.player.pos.y++;
+                }
+                this.drop(); 
+            }
+
             update(dt) {
                 if(!this.isAlive) return;
                 this.dropCounter+=dt; if(this.dropCounter>this.dropInterval) this.drop();
@@ -380,22 +427,20 @@
             tryPlayMusic();
 
             players = [];
-            // P1 siempre existe
             players.push(new Player('tetrisP1', 'scoreP1', {l:65, r:68, d:83, rot:87}, "P1"));
 
             const p2Sec = document.getElementById('p2-section');
-            if(mode === 2) {
+            if(mode===2) {
                 p2Sec.style.display = 'flex';
-                // Si son 2, ocultamos controles móviles (no caben)
                 document.getElementById('mobile-controls').style.display = 'none';
                 players.push(new Player('tetrisP2', 'scoreP2', {l:37, r:39, d:40, rot:38}, "P2"));
             } else {
                 p2Sec.style.display = 'none';
-                // Si es 1 y estamos en celular, mostramos controles
                 if(window.innerWidth <= 800) document.getElementById('mobile-controls').style.display = 'flex';
             }
 
-            gameRunning=true; lastTime=performance.now();
+            speed = 0.8; 
+            gameRunning=true; isPaused=false; lastTime=performance.now();
             requestAnimationFrame(updateLoop);
         }
 
@@ -404,10 +449,11 @@
             document.getElementById('game-over-screen').classList.remove('hidden');
             let txt=(players.length===1)?"Pts: "+players[0].player.score:(loser==="P1"?"¡P2 GANA!":"¡P1 GANA!");
             document.getElementById('winner-text').innerText=txt;
+            speed = 0.2; 
         }
 
         function updateLoop(time=0) {
-            if(!gameRunning) return;
+            if(!gameRunning || isPaused) return; 
             if(!time) time=performance.now();
             const dt=time-lastTime; lastTime=time;
             if(dt<1000 && dt>=0) players.forEach(p=>p.update(dt));
@@ -415,7 +461,7 @@
         }
 
         document.addEventListener('keydown', e => {
-            if(!gameRunning) return;
+            if(!gameRunning || isPaused) return;
             players.forEach(p => {
                 if(e.keyCode===p.ctrls.l) p.move(-1);
                 else if(e.keyCode===p.ctrls.r) p.move(1);
@@ -424,13 +470,16 @@
             });
         });
 
-        // TÁCTIL (P1)
-        function handleTouch(action) {
-            if(!gameRunning || players.length === 0) return;
+        // TÁCTIL RÁPIDO (ontouchstart)
+        function handleTouch(e, action) {
+            if(e.cancelable) e.preventDefault(); 
+            if(!gameRunning || isPaused || players.length === 0) return;
+            
             const p1 = players[0];
             if(action==='left') p1.move(-1);
             if(action==='right') p1.move(1);
-            if(action==='down') p1.drop();
+            if(action==='down') p1.drop(); 
+            if(action==='hardDrop') p1.hardDrop(); 
             if(action==='rotate') p1.playerRotate(1);
         }
 
