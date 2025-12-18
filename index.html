@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Tetris Neón V8 </title>
+    <title>Petris Neón V8 </title>
     <style>
         :root { --glow-color: #fff; }
         body {
@@ -72,7 +72,11 @@
         
         <button class="btn" id="btn-mode-1" style="border-color:#0DC2FF; color:#0DC2FF;" onclick="showMode(1)">1 JUGADOR</button>
         <button class="btn" id="btn-mode-2" style="border-color:#FF0D72; color:#FF0D72;" onclick="showMode(2)">MODO DUELO</button>
-        <button class="btn hidden" id="btn-start" style="background: #fff; color: #000;" onclick="startGame()">¡A JUGAR!</button>
+        
+        <div id="pre-start-controls" class="hidden" style="display: flex; flex-direction: column; align-items: center;">
+            <button class="btn" style="border-color:#aaa; color:#aaa; font-size: 14px; width: 200px;" onclick="resetMenu()">⬅️ VOLVER</button>
+            <button class="btn" id="btn-start" style="background: #fff; color: #000;" onclick="startGame()">¡A JUGAR!</button>
+        </div>
         
         <div id="high-scores"></div>
     </div>
@@ -102,7 +106,6 @@
     <audio id="bgMusic" loop src="music/Tetris Theme (Alpha Remix) - MAARK.mp3"></audio>
 
     <script>
-        // --- SONIDOS ---
         let audioCtx;
         function initAudio() { if(!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)(); }
         function playSfx(f, d, t) {
@@ -115,7 +118,6 @@
             osc.start(); osc.stop(audioCtx.currentTime + d);
         }
 
-        // --- FONDO ---
         const bgC = document.getElementById('bg-canvas'), bgCtx = bgC.getContext('2d');
         let stars = []; function res() { bgC.width = window.innerWidth; bgC.height = window.innerHeight; }
         window.onresize = res; res();
@@ -125,7 +127,6 @@
         for(let i=0;i<60;i++)stars.push(new S());
         function ani(){bgCtx.clearRect(0,0,bgC.width,bgC.height);stars.forEach(s=>{s.up();s.dr();});requestAnimationFrame(ani);}ani();
 
-        // --- LÓGICA ---
         const COLORES = [null, {f:'#FF0D72',g:'#FF0D72'}, {f:'#0DC2FF',g:'#0DC2FF'}, {f:'#0DFF72',g:'#0DFF72'}, {f:'#F538FF',g:'#F538FF'}, {f:'#FF8E0D',g:'#FF8E0D'}, {f:'#FFE138',g:'#FFE138'}, {f:'#3877FF',g:'#3877FF'}];
         const PIECES = 'ILJOTSZ';
         let gameRunning = false, isPaused = false, players = [], lastTime = 0, currentMode = 1;
@@ -166,51 +167,38 @@
             update(dt){this.dropCounter+=dt; if(this.dropCounter>this.dropInterval)this.drop(); this.draw();}
         }
 
-        // --- MOVILIDAD DAS (CORREGIDA) ---
         let keys = {}; let moveTimers = {}; const DAS_DELAY = 180, DAS_SPEED = 60;
-        
         document.onkeydown = e => {
             const p1=players[0], p2=players[1];
             if(!keys[e.keyCode]){
-                // Primer toque
                 if(e.keyCode===65) mO(p1,-1); if(e.keyCode===68) mO(p1,1); if(e.keyCode===83) p1.drop(); if(e.keyCode===87) p1.rotate(1);
                 if(p2){ if(e.keyCode===37) mO(p2,-1); if(e.keyCode===39) mO(p2,1); if(e.keyCode===40) p2.drop(); if(e.keyCode===38) p2.rotate(1); }
             }
             keys[e.keyCode] = performance.now();
         };
-
         document.onkeyup = e => { keys[e.keyCode]=false; moveTimers[e.keyCode]=0; };
-
         function mO(p,d){ p.pos.x+=d; if(p.coll()) p.pos.x -= d; }
-
         function processInput(now){
             if(!gameRunning||isPaused)return;
-            const checkDAS = (key, p, d) => {
-                if(keys[key] && now - keys[key] > DAS_DELAY){
-                    if(now - (moveTimers[key] || 0) > DAS_SPEED){
-                        mO(p, d);
-                        moveTimers[key] = now;
-                    }
-                }
-            };
-            // P1 Continuous
-            if(players[0]) {
-                checkDAS(65, players[0], -1); checkDAS(68, players[0], 1);
-                if(keys[83] && now - (moveTimers[83] || 0) > 50) { players[0].drop(); moveTimers[83] = now; }
-            }
-            // P2 Continuous
-            if(players[1]) {
-                checkDAS(37, players[1], -1); checkDAS(39, players[1], 1);
-                if(keys[40] && now - (moveTimers[40] || 0) > 50) { players[1].drop(); moveTimers[40] = now; }
-            }
+            const check=(k,p,d)=>{ if(keys[k]&&now-keys[k]>DAS_DELAY&&now-(moveTimers[k]||0)>DAS_SPEED){ mO(p,d); moveTimers[k]=now; }};
+            if(players[0]) { check(65,players[0],-1); check(68,players[0],1); if(keys[83]&&now-(moveTimers[83]||0)>50){players[0].drop();moveTimers[83]=now;}}
+            if(players[1]) { check(37,players[1],-1); check(39,players[1],1); if(keys[40]&&now-(moveTimers[40]||0)>50){players[1].drop();moveTimers[40]=now;}}
         }
 
+        // LÓGICA DE MENÚ
         function showMode(m) {
             currentMode = m;
             document.getElementById('inputs-p2').classList.toggle('hidden', m===1);
             document.getElementById('btn-mode-1').classList.add('hidden');
             document.getElementById('btn-mode-2').classList.add('hidden');
-            document.getElementById('btn-start').classList.remove('hidden');
+            document.getElementById('pre-start-controls').classList.remove('hidden');
+        }
+
+        function resetMenu() {
+            document.getElementById('inputs-p2').classList.add('hidden');
+            document.getElementById('btn-mode-1').classList.remove('hidden');
+            document.getElementById('btn-mode-2').classList.remove('hidden');
+            document.getElementById('pre-start-controls').classList.add('hidden');
         }
 
         function startGame() {
