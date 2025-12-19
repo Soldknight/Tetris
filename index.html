@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Petris Mobile & Duel Edition</title>
+    <title>Petris Mobile Pro</title>
     <style>
         :root { --glow-color: #fff; }
         body {
@@ -18,19 +18,13 @@
             height: 100vh; margin: 0; overflow: hidden; touch-action: none; user-select: none;
         }
         #bg-canvas { position: fixed; top: 0; left: 0; width: 100%; height: 100%; z-index: -1; }
-        h1 { margin-bottom: 10px; text-shadow: 0 0 10px #fff; font-size: 40px; }
+        h1 { margin-bottom: 10px; text-shadow: 0 0 10px #fff; font-size: 32px; }
         .overlay {
             position: absolute; top: 0; left: 0; width: 100%; height: 100%;
             background: rgba(0, 0, 0, 0.95); display: flex; flex-direction: column;
             align-items: center; justify-content: center; z-index: 100;
         }
         .hidden { display: none !important; }
-        .input-group { display: flex; flex-direction: column; gap: 10px; margin-bottom: 20px; align-items: center; }
-        input {
-            padding: 12px; border-radius: 25px; text-align: center; 
-            background: rgba(255,255,255,0.1); color: white; border: 2px solid #fff;
-            width: 220px; font-weight: bold; font-size: 16px;
-        }
         .btn {
             background: rgba(255, 255, 255, 0.05); color: #fff; font-size: 18px; padding: 15px 40px; margin: 5px;
             border: 2px solid #fff; border-radius: 50px; cursor: pointer; text-transform: uppercase; font-weight: bold;
@@ -42,23 +36,23 @@
             color: #fff; padding: 8px 12px; font-size: 12px; cursor: pointer; border-radius: 20px;
         }
 
-        /* --- CONTROLES MÓVILES (NUEVO) --- */
+        /* --- CONTROLES MÓVILES (POSICIÓN BAJA) --- */
         #mobile-controls {
-            position: fixed; bottom: 20px; width: 100%; display: none;
-            justify-content: space-around; align-items: center; z-index: 300;
+            position: fixed; bottom: 30px; width: 100%; display: none;
+            justify-content: center; align-items: center; z-index: 300;
+            gap: 40px;
         }
         .touch-btn {
-            width: 60px; height: 60px; background: rgba(255,255,255,0.1);
-            border: 2px solid #fff; border-radius: 50%; color: white;
+            width: 65px; height: 65px; background: rgba(255,255,255,0.05);
+            border: 2px solid rgba(255,255,255,0.5); border-radius: 50%; color: white;
             display: flex; align-items: center; justify-content: center;
-            font-size: 24px; font-weight: bold;
+            font-size: 28px; active { background: rgba(255,255,255,0.2); }
         }
-        .d-pad { display: grid; grid-template-columns: repeat(3, 60px); gap: 10px; }
+        .d-pad { display: grid; grid-template-columns: repeat(3, 70px); gap: 5px; }
 
         @media (max-width: 800px) { 
-            #main-container { transform: scale(0.85); gap: 10px; margin-top: -50px; } 
-            h1 { font-size: 24px; }
-            #mobile-controls { display: flex; } /* Se muestra solo en móvil */
+            #main-container { transform: scale(0.8); margin-top: -80px; } 
+            #mobile-controls { display: flex; } 
         }
 
         #main-container { display: flex; gap: 40px; align-items: flex-start; }
@@ -83,10 +77,10 @@
     <div id="menu-screen" class="overlay">
         <h1>PETRIS</h1>
         <div class="input-group" id="inputs-p1">
-            <input type="text" id="p1Name" placeholder="TU NOMBRE" maxlength="10">
+            <input type="text" id="p1Name" placeholder="TU NOMBRE" maxlength="10" style="padding:12px; border-radius:25px; text-align:center; background:rgba(255,255,255,0.1); color:white; border:2px solid #fff; width:220px; margin-bottom:15px;">
         </div>
         <div class="input-group hidden" id="inputs-p2">
-            <input type="text" id="p2Name" placeholder="NOMBRE JUGADOR 2" maxlength="10">
+            <input type="text" id="p2Name" placeholder="NOMBRE JUGADOR 2" maxlength="10" style="padding:12px; border-radius:25px; text-align:center; background:rgba(255,255,255,0.1); color:white; border:2px solid #fff; width:220px; margin-bottom:15px;">
         </div>
         
         <button class="btn" id="btn-mode-1" style="border-color:#0DC2FF; color:#0DC2FF;" onclick="showMode(1)">1 JUGADOR</button>
@@ -101,10 +95,10 @@
 
     <div id="mobile-controls" class="hidden">
         <div class="d-pad">
-            <div></div><div class="touch-btn" onclick="players[0].rotate(1)">↻</div><div></div>
-            <div class="touch-btn" onclick="mO(players[0],-1)">←</div>
-            <div class="touch-btn" onclick="players[0].drop()">↓</div>
-            <div class="touch-btn" onclick="mO(players[0],1)">→</div>
+            <div></div><div class="touch-btn" ontouchstart="players[0].rotate(1)">↻</div><div></div>
+            <div class="touch-btn" ontouchstart="startMobileDAS(-1)" ontouchend="stopMobileDAS()">←</div>
+            <div class="touch-btn" ontouchstart="startMobileDrop()" ontouchend="stopMobileDrop()">↓</div>
+            <div class="touch-btn" ontouchstart="startMobileDAS(1)" ontouchend="stopMobileDAS()">→</div>
         </div>
     </div>
 
@@ -133,7 +127,7 @@
     <audio id="bgMusic" loop src="music/Tetris Theme (Alpha Remix) - MAARK.mp3"></audio>
 
     <script>
-        // LA LÓGICA SE MANTIENE 100% IGUAL
+        // SONIDOS E INTERFAZ
         let audioCtx;
         function initAudio() { if(!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)(); }
         function playSfx(f, d, t) {
@@ -195,6 +189,7 @@
             update(dt){this.dropCounter+=dt; if(this.dropCounter>this.dropInterval)this.drop(); this.draw();}
         }
 
+        // CONTROL DAS PC
         let keys = {}; let moveTimers = {}; const DAS_DELAY = 180, DAS_SPEED = 60;
         document.onkeydown = e => {
             const p1=players[0], p2=players[1];
@@ -205,13 +200,28 @@
             keys[e.keyCode] = performance.now();
         };
         document.onkeyup = e => { keys[e.keyCode]=false; moveTimers[e.keyCode]=0; };
-        function mO(p,d){ p.pos.x+=d; if(p.coll()) p.pos.x -= d; }
+        function mO(p,d){ if(!p)return; p.pos.x+=d; if(p.coll()) p.pos.x -= d; }
         function processInput(now){
             if(!gameRunning||isPaused)return;
             const check=(k,p,d)=>{ if(keys[k]&&now-keys[k]>DAS_DELAY&&now-(moveTimers[k]||0)>DAS_SPEED){ mO(p,d); moveTimers[k]=now; }};
             if(players[0]) { check(65,players[0],-1); check(68,players[0],1); if(keys[83]&&now-(moveTimers[83]||0)>50){players[0].drop();moveTimers[83]=now;}}
             if(players[1]) { check(37,players[1],-1); check(39,players[1],1); if(keys[40]&&now-(moveTimers[40]||0)>50){players[1].drop();moveTimers[40]=now;}}
         }
+
+        // --- LÓGICA DAS PARA MÓVIL ---
+        let mobileInt;
+        function startMobileDAS(d) {
+            mO(players[0], d);
+            mobileInt = setTimeout(() => {
+                mobileInt = setInterval(() => mO(players[0], d), DAS_SPEED);
+            }, DAS_DELAY);
+        }
+        function stopMobileDAS() { clearTimeout(mobileInt); clearInterval(mobileInt); }
+        function startMobileDrop() {
+            players[0].drop();
+            mobileInt = setInterval(() => players[0].drop(), 50);
+        }
+        function stopMobileDrop() { clearInterval(mobileInt); }
 
         function showMode(m) {
             currentMode = m;
