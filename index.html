@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Petris Neón V8 </title>
+    <title>Petris Mobile & Duel Edition</title>
     <style>
         :root { --glow-color: #fff; }
         body {
@@ -36,11 +36,31 @@
             border: 2px solid #fff; border-radius: 50px; cursor: pointer; text-transform: uppercase; font-weight: bold;
             box-shadow: 0 0 15px rgba(255,255,255,0.2); width: 280px;
         }
-        #ui-controls { position: absolute; top: 20px; right: 20px; display: flex; gap: 15px; z-index: 200; }
+        #ui-controls { position: absolute; top: 10px; right: 10px; display: flex; gap: 10px; z-index: 200; }
         .mini-btn {
             background: rgba(0, 0, 0, 0.8); border: 2px solid rgba(255, 255, 255, 0.6); 
-            color: #fff; padding: 10px 15px; font-size: 14px; cursor: pointer; border-radius: 20px;
+            color: #fff; padding: 8px 12px; font-size: 12px; cursor: pointer; border-radius: 20px;
         }
+
+        /* --- CONTROLES MÓVILES (NUEVO) --- */
+        #mobile-controls {
+            position: fixed; bottom: 20px; width: 100%; display: none;
+            justify-content: space-around; align-items: center; z-index: 300;
+        }
+        .touch-btn {
+            width: 60px; height: 60px; background: rgba(255,255,255,0.1);
+            border: 2px solid #fff; border-radius: 50%; color: white;
+            display: flex; align-items: center; justify-content: center;
+            font-size: 24px; font-weight: bold;
+        }
+        .d-pad { display: grid; grid-template-columns: repeat(3, 60px); gap: 10px; }
+
+        @media (max-width: 800px) { 
+            #main-container { transform: scale(0.85); gap: 10px; margin-top: -50px; } 
+            h1 { font-size: 24px; }
+            #mobile-controls { display: flex; } /* Se muestra solo en móvil */
+        }
+
         #main-container { display: flex; gap: 40px; align-items: flex-start; }
         .player-section { display: flex; flex-direction: column; align-items: center; width: 210px; }
         .game-container {
@@ -50,35 +70,42 @@
         }
         .stats { margin-top: 10px; font-size: 18px; font-weight: bold; color: #fff; }
         #high-scores { margin-top: 20px; color: #FFD700; font-size: 14px; text-align: center; }
-        @media (max-width: 800px) { #main-container { transform: scale(0.6); gap: 10px; } h1 { display: none; } }
     </style>
 </head>
 <body onclick="initAudio()">
     <canvas id="bg-canvas"></canvas>
     
     <div id="ui-controls" class="hidden">
-        <button class="mini-btn" onclick="togglePause()">⏸️ PAUSA</button>
-        <button class="mini-btn" onclick="location.reload()">❌ SALIR</button>
+        <button class="mini-btn" onclick="togglePause()">⏸️</button>
+        <button class="mini-btn" onclick="location.reload()">❌</button>
     </div>
 
     <div id="menu-screen" class="overlay">
         <h1>PETRIS</h1>
         <div class="input-group" id="inputs-p1">
-            <input type="text" id="p1Name" placeholder="NOMBRE JUGADOR 1" maxlength="10">
+            <input type="text" id="p1Name" placeholder="TU NOMBRE" maxlength="10">
         </div>
         <div class="input-group hidden" id="inputs-p2">
             <input type="text" id="p2Name" placeholder="NOMBRE JUGADOR 2" maxlength="10">
         </div>
         
         <button class="btn" id="btn-mode-1" style="border-color:#0DC2FF; color:#0DC2FF;" onclick="showMode(1)">1 JUGADOR</button>
-        <button class="btn" id="btn-mode-2" style="border-color:#FF0D72; color:#FF0D72;" onclick="showMode(2)">MODO DUELO</button>
+        <button class="btn" id="btn-mode-2" style="border-color:#FF0D72; color:#FF0D72;" onclick="showMode(2)">MODO DUELO (PC)</button>
         
         <div id="pre-start-controls" class="hidden" style="display: flex; flex-direction: column; align-items: center;">
             <button class="btn" style="border-color:#aaa; color:#aaa; font-size: 14px; width: 200px;" onclick="resetMenu()">⬅️ VOLVER</button>
             <button class="btn" id="btn-start" style="background: #fff; color: #000;" onclick="startGame()">¡A JUGAR!</button>
         </div>
-        
         <div id="high-scores"></div>
+    </div>
+
+    <div id="mobile-controls" class="hidden">
+        <div class="d-pad">
+            <div></div><div class="touch-btn" onclick="players[0].rotate(1)">↻</div><div></div>
+            <div class="touch-btn" onclick="mO(players[0],-1)">←</div>
+            <div class="touch-btn" onclick="players[0].drop()">↓</div>
+            <div class="touch-btn" onclick="mO(players[0],1)">→</div>
+        </div>
     </div>
 
     <div id="game-over-screen" class="overlay hidden">
@@ -106,6 +133,7 @@
     <audio id="bgMusic" loop src="music/Tetris Theme (Alpha Remix) - MAARK.mp3"></audio>
 
     <script>
+        // LA LÓGICA SE MANTIENE 100% IGUAL
         let audioCtx;
         function initAudio() { if(!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)(); }
         function playSfx(f, d, t) {
@@ -152,7 +180,7 @@
             reset(){
                 this.piece=this.nextPiece; this.nextPiece=this.cP(PIECES[Math.random()*7|0]);
                 this.pos={y:0, x:3};
-                if(this.coll()){ gameRunning=false; saveScore(this.name, this.score); document.getElementById('game-over-screen').classList.remove('hidden'); document.getElementById('winner-text').innerText=(players.length>1?`¡GANÓ EL OTRO! perdio ${this.name}`:`${this.name}: ${this.score}`); }
+                if(this.coll()){ gameRunning=false; saveScore(this.name, this.score); document.getElementById('game-over-screen').classList.remove('hidden'); document.getElementById('winner-text').innerText=(players.length>1?`¡GANÓ EL OTRO!`:`${this.name}: ${this.score}`); }
                 this.drN();
             }
             drN(){this.nCtx.clearRect(0,0,4,4);this.nextPiece.forEach((r,y)=>r.forEach((v,x)=>{if(v){this.nCtx.fillStyle=COLORES[v].f;this.nCtx.fillRect(x,y,0.9,0.9);}}));}
@@ -185,7 +213,6 @@
             if(players[1]) { check(37,players[1],-1); check(39,players[1],1); if(keys[40]&&now-(moveTimers[40]||0)>50){players[1].drop();moveTimers[40]=now;}}
         }
 
-        // LÓGICA DE MENÚ
         function showMode(m) {
             currentMode = m;
             document.getElementById('inputs-p2').classList.toggle('hidden', m===1);
@@ -204,11 +231,12 @@
         function startGame() {
             const n1 = document.getElementById('p1Name').value.trim().toUpperCase();
             const n2 = document.getElementById('p2Name').value.trim().toUpperCase();
-            if(currentMode === 1 && !n1) { alert("¡DEBES PONER TU NOMBRE!"); return; }
-            if(currentMode === 2 && (!n1 || !n2)) { alert("¡AMBOS JUGADORES DEBEN TENER NOMBRE!"); return; }
+            if(currentMode === 1 && !n1) { alert("¡PON TU NOMBRE!"); return; }
+            if(currentMode === 2 && (!n1 || !n2)) { alert("¡AMBOS NECESITAN NOMBRE!"); return; }
             document.getElementById('menu-screen').className='hidden';
             document.getElementById('main-container').className='';
             document.getElementById('ui-controls').className='';
+            if(currentMode===1 && window.innerWidth < 800) document.getElementById('mobile-controls').className='';
             document.getElementById('bgMusic').play();
             players = [new Player('tetrisP1','scoreP1','levelP1','nextP1',1, n1)];
             document.getElementById('label-p1').innerText = n1;
@@ -223,7 +251,7 @@
         function loop(t=0){ if(!gameRunning||isPaused)return; processInput(t); const dt=t-lastTime; lastTime=t; players.forEach(p=>p.update(dt)); requestAnimationFrame(loop); }
         function togglePause(){ isPaused=!isPaused; document.getElementById('bgMusic')[isPaused?'pause':'play'](); if(!isPaused){lastTime=performance.now(); loop();} }
         function saveScore(n,s){let sc=JSON.parse(localStorage.getItem('petrisScores')||'{}'); if(!sc[n]||s>sc[n]){sc[n]=s;localStorage.setItem('petrisScores',JSON.stringify(sc));}}
-        const sc=JSON.parse(localStorage.getItem('petrisScores')||'{}'); let h="TOP RÉCORDS:<br>"; 
+        const sc=JSON.parse(localStorage.getItem('petrisScores')||'{}'); let h="RÉCORDS:<br>"; 
         Object.entries(sc).sort((a,b)=>b[1]-a[1]).slice(0,5).forEach(([n,s])=>{h+=n+": "+s+"<br>";}); 
         document.getElementById('high-scores').innerHTML=h;
     </script>
